@@ -138,8 +138,8 @@ export default function Dashboard() {
     { label: 'Completed', val: stats.completions },
     { label: 'Team Members', val: stats.team },
   ];
-  console.log("ROLE:", profile?.role);
-  console.log("PERMISSION:", hasPermission(profile?.role, 'create_survey'));
+  // console.log("ROLE:", profile?.role);
+  // console.log("PERMISSION:", hasPermission(profile?.role, 'create_survey'));
   return (
     <div style={S.page}>
       {/* Onboarding */}

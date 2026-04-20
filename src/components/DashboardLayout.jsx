@@ -161,6 +161,8 @@ export default function DashboardLayout() {
 
   function handleSignOut() {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("tenant");
     nav("/login");
     setUserMenu(false);
   }
