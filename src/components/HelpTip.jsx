@@ -20,10 +20,10 @@ export default function HelpTip({ text, position = 'top' }) {
   }, [visible]);
 
   const tooltipPos = {
-    top:    { bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' },
-    bottom: { top:    'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' },
-    left:   { right:  'calc(100% + 8px)', top:  '50%', transform: 'translateY(-50%)' },
-    right:  { left:   'calc(100% + 8px)', top:  '50%', transform: 'translateY(-50%)' },
+    top: { bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' },
+    bottom: { top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' },
+    left: { right: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' },
+    right: { left: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' },
   }[position] || {};
 
   return (
@@ -52,12 +52,12 @@ export default function HelpTip({ text, position = 'top' }) {
           transition: 'color 0.2s',
           outline: 'none',
         }}
-        onMouseEnterCapture={e => e.currentTarget.style.color = 'var(--coral)'}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--coral)'}
         onFocusCapture={e => e.currentTarget.style.color = 'var(--coral)'}
         onBlurCapture={e => e.currentTarget.style.color = 'rgba(22,15,8,0.3)'}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
+          <circle cx="7" cy="7" r="6.5" stroke="currentColor" strokeWidth="1.2" />
           <text x="7" y="10.5" textAnchor="middle" fill="currentColor"
             style={{ fontSize: 8, fontFamily: 'Georgia, serif', fontWeight: 700 }}>i</text>
         </svg>
@@ -93,10 +93,10 @@ export default function HelpTip({ text, position = 'top' }) {
             {/* Arrow */}
             <span style={{
               position: 'absolute',
-              ...(position === 'top'    ? { top: '100%', left: '50%', transform: 'translateX(-50%)', borderTop: '5px solid var(--espresso)', borderLeft: '5px solid transparent', borderRight: '5px solid transparent' } : {}),
+              ...(position === 'top' ? { top: '100%', left: '50%', transform: 'translateX(-50%)', borderTop: '5px solid var(--espresso)', borderLeft: '5px solid transparent', borderRight: '5px solid transparent' } : {}),
               ...(position === 'bottom' ? { bottom: '100%', left: '50%', transform: 'translateX(-50%)', borderBottom: '5px solid var(--espresso)', borderLeft: '5px solid transparent', borderRight: '5px solid transparent' } : {}),
-              ...(position === 'left'   ? { left: '100%', top: '50%', transform: 'translateY(-50%)', borderLeft: '5px solid var(--espresso)', borderTop: '5px solid transparent', borderBottom: '5px solid transparent' } : {}),
-              ...(position === 'right'  ? { right: '100%', top: '50%', transform: 'translateY(-50%)', borderRight: '5px solid var(--espresso)', borderTop: '5px solid transparent', borderBottom: '5px solid transparent' } : {}),
+              ...(position === 'left' ? { left: '100%', top: '50%', transform: 'translateY(-50%)', borderLeft: '5px solid var(--espresso)', borderTop: '5px solid transparent', borderBottom: '5px solid transparent' } : {}),
+              ...(position === 'right' ? { right: '100%', top: '50%', transform: 'translateY(-50%)', borderRight: '5px solid var(--espresso)', borderTop: '5px solid transparent', borderBottom: '5px solid transparent' } : {}),
             }} />
           </motion.div>
         )}

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '../lib/supabase';
 import { hasPermission, timeAgo, SURVEY_STATUS } from '../lib/constants';
 import { useLoading } from '../context/LoadingContext';
 import OnboardingChecklist from '../components/OnboardingChecklist';
@@ -104,26 +103,56 @@ export default function Dashboard() {
     return () => supabase.removeChannel(channel);
   }, [profile?.tenant_id]);
 
+  // async function load() {
+  //   try {
+  //     const [sv, r, c, t] = await Promise.all([
+  //       supabase.from('surveys').select('*', { count: 'exact', head: true }),
+  //       supabase.from('survey_responses').select('*', { count: 'exact', head: true }),
+  //       supabase.from('survey_responses').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+  //       supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
+  //     ]);
+  //     setStats({ surveys: sv.count || 0, responses: r.count || 0, completions: c.count || 0, team: t.count || 0 });
+  //     if (prevResponses.current !== null) {
+  //       checkMilestone(prevResponses.current, r.count || 0);
+  //     }
+  //     prevResponses.current = r.count || 0;
+  //     const { data } = await supabase.from('surveys').select('*, creator:user_profiles!created_by(full_name)').order('created_at', { ascending: false }).limit(6);
+  //     setRecent(data || []);
+  //   } catch (e) { console.error(e); }
+  //   finally { stopLoading(); }
+  // }
+
   async function load() {
     try {
-      const [sv, r, c, t] = await Promise.all([
-        supabase.from('surveys').select('*', { count: 'exact', head: true }),
-        supabase.from('survey_responses').select('*', { count: 'exact', head: true }),
-        supabase.from('survey_responses').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-        supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
-      ]);
-      setStats({ surveys: sv.count || 0, responses: r.count || 0, completions: c.count || 0, team: t.count || 0 });
-      if (prevResponses.current !== null) {
-        checkMilestone(prevResponses.current, r.count || 0);
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://127.0.0.1:8000/surveys/dashboard", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (!data || !data.stats) {
+        toast.error("Invalid dashboard response:", data);
+        return;
       }
-      prevResponses.current = r.count || 0;
-      const { data } = await supabase.from('surveys').select('*, creator:user_profiles!created_by(full_name)').order('created_at', { ascending: false }).limit(6);
-      setRecent(data || []);
-    } catch (e) { console.error(e); }
-    finally { stopLoading(); }
+      // console.log("API DATA:", data);
+      setStats({
+        surveys: data.stats.surveys || 0,
+        responses: data.stats.responses || 0,
+        completions: data.stats.completed || 0,
+        team: data.stats.team || 0
+      });
+
+      setRecent(data.recent_surveys);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      stopLoading();
+    }
   }
-
-
 
   const h = new Date().getHours();
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';

@@ -11,9 +11,9 @@ import ConfirmModal from '../components/ConfirmModal';
 const STATUS_FILTERS = ['all', 'active', 'draft', 'paused', 'expired', 'closed'];
 const SORT_OPTIONS = [
   { value: 'created_desc', label: 'Newest first' },
-  { value: 'created_asc',  label: 'Oldest first' },
-  { value: 'title_asc',    label: 'Title A–Z' },
-  { value: 'title_desc',   label: 'Title Z–A' },
+  { value: 'created_asc', label: 'Oldest first' },
+  { value: 'title_asc', label: 'Title A–Z' },
+  { value: 'title_desc', label: 'Title Z–A' },
 ];
 
 export default function SurveyList() {
@@ -21,11 +21,11 @@ export default function SurveyList() {
   const nav = useNavigate();
   const { stopLoading } = useLoading();
   const [surveys, setSurveys] = useState([]);
-  const [search, setSearch]   = useState('');
-  const [filter, setFilter]   = useState('all');
-  const [sort, setSort]         = useState('created_desc');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [sort, setSort] = useState('created_desc');
   const [sortOpen, setSortOpen] = useState(false);
-  const [menu, setMenu]       = useState(null);
+  const [menu, setMenu] = useState(null);
   const sortRef = useRef(null);
   const menuRef = useRef({});
 
@@ -49,40 +49,67 @@ export default function SurveyList() {
   }, [menu]);
 
   // ── ConfirmModal state ────────────────────────────────────────────────────
-  const [confirmOpen,  setConfirmOpen]  = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmProps, setConfirmProps] = useState({});
 
   // ── Extend prompt state ───────────────────────────────────────────────────
-  const [extendOpen,  setExtendOpen]  = useState(false);
-  const [extendId,    setExtendId]    = useState(null);
+  const [extendOpen, setExtendOpen] = useState(false);
+  const [extendId, setExtendId] = useState(null);
 
   const location = useLocation();
-  useEffect(() => { if (profile?.id) load(); else stopLoading(); }, [profile?.id, location.key]);
+  // useEffect(() => { if (profile?.id) load(); else stopLoading(); }, [profile?.id, location.key]);
+  useEffect(() => {
+    load();
+  }, [location.key]);
 
   async function load() {
     try {
-      const { data } = await supabase
-        .from('surveys')
-        .select('*,creator:user_profiles!created_by(full_name)')
-        .order('created_at', { ascending: false });
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://127.0.0.1:8000/surveys/", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch surveys");
+      }
+
+      const data = await res.json();
+
       setSurveys(data || []);
-    } catch (e) { console.error(e); }
-    finally { stopLoading(); }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      stopLoading();
+    }
   }
 
   // ── Sorted + filtered list ────────────────────────────────────────────────
+  // const list = surveys
+  //   .filter(s =>
+  //     s.title.toLowerCase().includes(search.toLowerCase()) &&
+  //     (filter === 'all' || s.status === filter)
+  //   )
+  //   .sort((a, b) => {
+  //     if (sort === 'created_desc') return new Date(b.created_at) - new Date(a.created_at);
+  //     if (sort === 'created_asc') return new Date(a.created_at) - new Date(b.created_at);
+  //     if (sort === 'title_asc') return a.title.localeCompare(b.title);
+  //     if (sort === 'title_desc') return b.title.localeCompare(a.title);
+  //     return 0;
+  //   });
+
   const list = surveys
+    .map(s => ({
+      ...s,
+      status: s.status || "draft",
+      created_at: s.created_at || new Date().toISOString(),
+      creator: s.creator || { full_name: "You" }
+    }))
     .filter(s =>
       s.title.toLowerCase().includes(search.toLowerCase()) &&
       (filter === 'all' || s.status === filter)
     )
-    .sort((a, b) => {
-      if (sort === 'created_desc') return new Date(b.created_at) - new Date(a.created_at);
-      if (sort === 'created_asc')  return new Date(a.created_at) - new Date(b.created_at);
-      if (sort === 'title_asc')    return a.title.localeCompare(b.title);
-      if (sort === 'title_desc')   return b.title.localeCompare(a.title);
-      return 0;
-    });
 
   // ── Actions ───────────────────────────────────────────────────────────────
   function confirmDelete(id, title) {
@@ -215,7 +242,7 @@ export default function SurveyList() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 36, flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Search */}
         <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
-          <svg style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <svg style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
           <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search surveys…"
             style={{ width: '100%', boxSizing: 'border-box', paddingLeft: 44, paddingRight: 20, paddingTop: 12, paddingBottom: 12, background: 'var(--warm-white)', border: '1px solid rgba(22,15,8,0.1)', borderRadius: 999, fontFamily: 'Fraunces, serif', fontSize: 14, color: 'var(--espresso)', outline: 'none', transition: 'border-color 0.2s' }}
             onFocus={e => e.target.style.borderColor = 'var(--coral)'}
@@ -296,14 +323,14 @@ export default function SurveyList() {
                     {menu === sv.id && (
                       <div style={{ position: 'absolute', right: 0, top: 36, zIndex: 200, width: 190, background: 'var(--espresso)', borderRadius: 16, padding: 8, boxShadow: '0 24px 60px rgba(22,15,8,0.25)' }}>
                         {[
-                          { label: 'Edit',        icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>, action: () => { nav(`/surveys/${sv.id}/edit`); setMenu(null); } },
-                          { label: 'Analytics',   icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 20h18M7 20V12M11 20V8M15 20V14M19 20V4"/></svg>, action: () => { nav(`/surveys/${sv.id}/analytics`); setMenu(null); } },
+                          { label: 'Edit', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>, action: () => { nav(`/surveys/${sv.id}/edit`); setMenu(null); } },
+                          { label: 'Analytics', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 20h18M7 20V12M11 20V8M15 20V14M19 20V4" /></svg>, action: () => { nav(`/surveys/${sv.id}/analytics`); setMenu(null); } },
                           // Copy link — only shown when survey is NOT in draft
-                          sv.status !== 'draft' && { label: 'Copy link', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>, action: () => copy(sv.slug) },
-                          { label: 'Duplicate',   icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>, action: () => duplicate(sv) },
-                          sv.status !== 'active' && { label: 'Activate',  icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="currentColor" stroke="none"/></svg>, action: () => chg(sv.id, 'active'), coral: true },
-                          sv.status === 'active' && { label: 'Pause',     icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="14" y1="8" x2="14" y2="16"/></svg>, action: () => chg(sv.id, 'paused') },
-                          hasPermission(profile?.role, 'delete_survey') && sv.status === 'draft' && { label: 'Delete', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>, action: () => confirmDelete(sv.id, sv.title), danger: true },
+                          sv.status !== 'draft' && { label: 'Copy link', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>, action: () => copy(sv.slug) },
+                          { label: 'Duplicate', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>, action: () => duplicate(sv) },
+                          sv.status !== 'active' && { label: 'Activate', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="currentColor" stroke="none" /></svg>, action: () => chg(sv.id, 'active'), coral: true },
+                          sv.status === 'active' && { label: 'Pause', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><line x1="10" y1="8" x2="10" y2="16" /><line x1="14" y1="8" x2="14" y2="16" /></svg>, action: () => chg(sv.id, 'paused') },
+                          hasPermission(profile?.role, 'delete_survey') && sv.status === 'draft' && { label: 'Delete', icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /></svg>, action: () => confirmDelete(sv.id, sv.title), danger: true },
                         ].filter(Boolean).map(item => (
                           <button key={item.label} onClick={item.action}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'Syne, sans-serif', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: item.danger ? 'var(--terracotta)' : item.coral ? 'var(--coral)' : 'rgba(253,245,232,0.7)', borderRadius: 10, transition: 'background 0.15s' }}
@@ -339,14 +366,14 @@ export default function SurveyList() {
                   <Link to={`/surveys/${sv.id}/analytics`} style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'Syne, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(22,15,8,0.4)', textDecoration: 'none', transition: 'color 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.color = 'var(--coral)'}
                     onMouseLeave={e => e.currentTarget.style.color = 'rgba(22,15,8,0.4)'}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 20h18M7 20V12M11 20V8M15 20V14M19 20V4"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 20h18M7 20V12M11 20V8M15 20V14M19 20V4" /></svg>
                     Analytics
                   </Link>
                   <Link to={`/surveys/${sv.id}/edit`} style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'Syne, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(22,15,8,0.4)', textDecoration: 'none', transition: 'color 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.color = 'var(--espresso)'}
                     onMouseLeave={e => e.currentTarget.style.color = 'rgba(22,15,8,0.4)'}>
                     Edit
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
                   </Link>
                 </div>
               </div>
