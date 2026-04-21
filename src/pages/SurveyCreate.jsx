@@ -74,10 +74,10 @@ function QCardCreate({ q, i, tc, qs, sQ, delQ, moveQ, addOpt, sOpt, delOpt }) {
             </div>
           </div>
 
-          <input value={q.question_text} onChange={e => sQ(q._id, 'question_text', e.target.value)} placeholder="Type your question here\u2026"
+          <input value={q.question_text} onChange={e => sQ(q._id, 'question_text', e.target.value)} placeholder="Type your question here\u2026" required
             style={{ ...INP, fontSize: 17, padding: '14px 18px', background: 'rgba(253,245,232,0.55)', border: '1.5px solid rgba(22,15,8,0.07)', marginBottom: 10, borderRadius: 16 }} onFocus={fi} onBlur={fo} />
 
-          <input value={q.description || ''} onChange={e => sQ(q._id, 'description', e.target.value)} placeholder="Description or helper text (optional)"
+          <input value={q.description || ''} onChange={e => sQ(q._id, 'description', e.target.value)} placeholder="Description or helper text (optional)" required
             style={{ ...INP, fontSize: 13, color: 'rgba(22,15,8,0.45)', padding: '10px 16px', background: 'transparent', border: '1.5px solid rgba(22,15,8,0.06)', marginBottom: 16, borderRadius: 13 }} onFocus={fi} onBlur={fo} />
 
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -259,15 +259,86 @@ export default function SurveyCreate() {
 
 
   //Connecting to FastAPI to save survey data
+  // async function save(status = "draft") {
+  //   if (!f.title.trim()) {
+  //     toast.error("Title is required");
+  //     return;
+  //   }
+
+  //   try {
+  //     const token = localStorage.getItem("token");
+
+  //     const res = await fetch("http://127.0.0.1:8000/surveys/", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Authorization": `Bearer ${token}`
+  //       },
+  //       body: JSON.stringify({
+  //         title: f.title,
+  //         description: f.description,
+  //         welcome_message: f.welcome_message,
+  //         thank_you_message: f.thank_you_message,
+  //         expiry_date: f.expires_at || null,
+  //         theme_color: f.theme_color
+  //       })
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (!res.ok) throw new Error(data.detail || "Failed");
+
+  //     //console.log(data);
+  //     toast.success("Survey created ");
+
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast.error(err.message);
+  //   }
+  // }
+
+
+
   async function save(status = "draft") {
+
+    const token = localStorage.getItem("token");
+
+    if (!token || token === "undefined") {
+      toast.error("Please login again");
+      return;
+    }
+
     if (!f.title.trim()) {
       toast.error("Title is required");
       return;
     }
 
+    // 🚨 MIN 2 QUESTIONS
+    if (qs.length < 2) {
+      toast.error("Add at least 2 questions");
+      return;
+    }
+
+    // 🚨 EMPTY QUESTION CHECK
+    if (qs.some(q => !q.question_text.trim())) {
+      toast.error("Question text cannot be empty");
+      return;
+    }
+
+    // 🚨 OPTIONS VALIDATION
+    if (qs.some(q =>
+      ['single_choice', 'multiple_choice', 'dropdown'].includes(q.question_type)
+      && (!q.options || q.options.length < 2)
+    )) {
+      toast.error("Choice questions need at least 2 options");
+      return;
+    }
+
+
     try {
       const token = localStorage.getItem("token");
 
+      // ✅ STEP 1: Create Survey
       const res = await fetch("http://127.0.0.1:8000/surveys/", {
         method: "POST",
         headers: {
@@ -285,21 +356,41 @@ export default function SurveyCreate() {
       });
 
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.detail || "Failed");
 
-      //console.log(data);
-      toast.success("Survey created ");
+      const surveyId = data.id; // ✅ IMPORTANT
+
+      // ✅ STEP 2: Send Questions
+      await fetch(`http://127.0.0.1:8000/questions/${surveyId}/questions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(
+          qs.map(q => ({
+            text: q.question_text,
+            question_type: q.question_type,
+            is_required: q.is_required,
+            description: q.description,
+            options: q.options || []
+          }))
+        )
+      });
+
+      toast.success("Survey + Questions saved successfully 🎉");
 
     } catch (err) {
       console.error(err);
       toast.error(err.message);
     }
   }
-  if (!token || token === "undefined") {
-    toast.error("Invalid session. Please login again.");
-    return;
-  }
+  // if (!token || token === "undefined") {
+  //   toast.error("Invalid session. Please login again.");
+  //   return;
+  // }
+
+
 
   // console.log(JSON.parse(atob(token.split('.')[1])));
 
